@@ -1,6 +1,7 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var session = require('express-session');
 var bodyParser = require('body-parser');
 
 
@@ -23,25 +24,81 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
-function(req, res) {
-  res.render('index');
+app.use(session({
+  secret: 'keyboard cat',
+}));
+
+app.get('/login', function(req, res){
+  res.render('login')
 });
 
-app.get('/create', 
-function(req, res) {
-  res.render('index');
+app.get('/signup', function(req, res){
+  res.render('signup')
 });
 
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
-  });
+app.get('/', function(req, res) {
+  if(util.isLogged()){
+    res.render('index');
+  } else {
+    res.redirect('login');
+  }
 });
 
-app.post('/links', 
-function(req, res) {
+app.get('/create', function(req, res) {
+  if(util.isLogged()){
+    res.render('create');
+  } else {
+    res.redirect('login');
+  }
+});
+
+app.get('/links', function(req, res) {
+  if(util.isLogged()){
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+    });
+  } else {
+    res.redirect('login');
+  }
+});
+
+app.post('/signup', function(req, res) {
+
+  var username = req.body.username;
+  var password = req.body.password;
+
+  if (username == 'demo' && password == 'demo'){
+    req.session.regenerate(function(){
+      console.log('inside session');
+      req.session.user = username;
+      res.redirect('/');
+      res.send(201);
+    });
+  } else {
+    res.redirect('signup');
+  }
+
+});
+
+app.post('/login', function(req, res) {
+
+  var username = req.body.username;
+  var password = req.body.password;
+
+  if (username == 'demo' && password == 'demo'){
+    req.session.regenerate(function(){
+      console.log('inside session');
+      req.session.user = username;
+      res.redirect('/');
+      res.send(201);
+    });
+  } else {
+    res.redirect('login');
+  }
+
+});
+
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -78,6 +135,10 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.get('/',
+function(req, res) {
+  res.render('index');
+});
 
 
 /************************************************************/
